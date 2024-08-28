@@ -1,0 +1,19 @@
+<launch>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find my_turtlebot_sim)/worlds/test_house.world"/>
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
+    </include>
+
+    <include file="$(find my_turtlebot_sim)/launch/spawn_robot.launch">
+        <arg name="init_pose" value="-x 0 -y 0 -z 3 -Y 0"/>
+        <arg name="robot_name" value="Robot1"/>
+    </include>        
+
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf"  args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
+    
+</launch>

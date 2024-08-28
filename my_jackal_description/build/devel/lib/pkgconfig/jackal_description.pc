@@ -1,0 +1,8 @@
+prefix=/home/ryu/snu/UROP/catkin_ws/src/jackal/jackal_description/build/devel
+
+Name: jackal_description
+Description: Description of jackal_description
+Version: 0.8.8
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

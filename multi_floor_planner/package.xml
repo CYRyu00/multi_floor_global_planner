@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>multi_floor_planner</name>
+  <version>0.0.0</version>
+  <description>The multi_floor_planner package</description>
+
+  <maintainer email="user@todo.todo">TODO: Maintainer Name</maintainer>
+
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>message_filters</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  
+
+  <build_depend>rospy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+</package>

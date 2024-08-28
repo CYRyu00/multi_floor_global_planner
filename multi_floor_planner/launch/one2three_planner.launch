@@ -1,0 +1,14 @@
+<launch>
+   
+    <node name="one2three_planner" pkg="multi_floor_planner" type="one2three_planner" output="screen"/>
+
+    <!-- Launch the pose_publisher node -->
+    <node name="pose_publisher" pkg="multi_floor_planner" type="initpose_pub.py" output="screen"/>
+    <node name="goal_publisher" pkg="multi_floor_planner" type="goal_pub.py" output="screen"/>
+    
+    <!-- Launch RViz with a specific configuration file -->
+<!--     
+     <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find multi_floor_planner)/rviz/one2three_planner.rviz"/> -->
+     
+</launch>

@@ -1,0 +1,15 @@
+<launch>
+    <!-- Launch the global_planner node -->
+    <node name="global_planner" pkg="global_planner" type="global_planner" output="screen">
+        <param name="yaml_file" type="string" value="/home/ryu/snu/UROP/turtle_ws/src/my_turtlebot_sim/maps/1F.yaml"/>
+    </node>
+
+    <!-- Launch the pose_publisher node -->
+    <node name="pose_publisher" pkg="global_planner" type="initpose_pub.py" output="screen"/>
+    
+    <!-- Launch RViz with a specific configuration file -->
+    
+    <!-- <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find global_planner)/rviz/one_floor.rviz"/>
+     -->
+</launch>

@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/ryu/snu/UROP/catkin_ws/src/jackal/jackal_description/build/devel/setup.sh

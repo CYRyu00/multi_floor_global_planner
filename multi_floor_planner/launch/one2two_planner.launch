@@ -1,0 +1,14 @@
+<launch>
+   
+    <node name="one2two_planner" pkg="global_planner" type="one2two_planner" output="screen"/>
+
+    <!-- Launch the pose_publisher node -->
+    <node name="pose_publisher" pkg="global_planner" type="initpose_pub.py" output="screen"/>
+    <node name="goal_publisher" pkg="global_planner" type="goal_pub.py" output="screen"/>
+    
+    <!-- Launch RViz with a specific configuration file -->
+    
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find global_planner)/rviz/one2two_planner.rviz"/>
+    
+</launch>

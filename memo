@@ -1,0 +1,46 @@
+roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/urop_ws/src/multi_floor_planner/maps/1F_3F_building.yaml
+rosrun map_server map_server /home/ryu/urop_ws/src/multi_floor_planner/maps/1F_3F_building.yaml
+
+
+MAP
+roslaunch my_jackal sim_stair.launch config:=front_laser
+roslaunch my_jackal_navigation amcl_demo.launch
+roslaunch jackal_viz view_robot.launch config:=localization
+
+roslaunch multi_floor_planner load_three_floor.launch
+roslaunch multi_floor_planner one2three_planner.launch
+rosrun map_server map_server /home/ryu/urop_ws/src/multi_floor_planner/maps/building2_1F.yaml
+
+
+SLAM
+roslaunch my_jackal sim_stair.launch config:=front_laser
+roslaunch jackal_navigation gmapping_demo.launch
+roslaunch jackal_viz view_robot.launch config:=gmapping
+
+std::vector<std::vector<std::vector<double>>> stair_poses = {{{5.395, -3.871, 0, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2},{5.132, 3.536 ,0.75, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2 },{1000,1000},{5.264, -0.168, 0.375, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2}} ,
+                                                          {{-5.367, 3.334, 0, 0, 0, -ONE_PER_ROOT_2,ONE_PER_ROOT_2},{-5.434, -3.415 ,0.75, 0, 0, -ONE_PER_ROOT_2,ONE_PER_ROOT_2 },{1000,1000},{-5.4005, -0.0405, 0.375, 0, 0, -ONE_PER_ROOT_2, ONE_PER_ROOT_2}}, 
+                                                          {{1000,1000}, {-4.319, -3.510, 0.75, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2},{-4.068, 3.721, 1.5, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2}, {-4.1935, 0.1055, 1.125, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2}},
+                                                          {{1000,1000}, {3.611,  -4.010, 0.75, 0,0, 1,0},{-2.643, -3.804, 1.5, 0,0,1,0},{0.484, -3.907, 1.125, 0,0, 1,0}}};
+
+                                                        //   {{{271, -189,0, 0,0.7071067,0.7071067},{257, 174 ,1, 0,0.7071067,0.7071067 },{1000,1000}} ,
+                                                        //   {{-265, 170}, {-265, -170},{1000,1000}}, 
+                                                        //   {{1000,1000}, {-203, -170},{-203, 180}},
+                                                        //   {{1000,1000}, {170, -194},{-125, -194}}};
+
+
+
+
+rostopic pub /amcl_pose geometry_msgs/PoseWithCovarianceStamped "header:
+  seq: 0
+  stamp: {secs: 0, nsecs: 0}
+  frame_id: 'map'
+pose:
+  pose:
+    position: {x: -2.643, y: -3.907, z: 0.0}
+    orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
+  covariance: [0.1, 0, 0, 0, 0, 0,
+               0, 0.1, 0, 0, 0, 0,
+               0, 0, 0.1, 0, 0, 0,
+               0, 0, 0, 0.1, 0, 0,
+               0, 0, 0, 0, 0.1, 0,
+               0, 0, 0, 0, 0, 0.1]" -r 1
