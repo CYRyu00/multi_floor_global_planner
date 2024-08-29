@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>my_rvl_navigation</name>
+  <version>1.2.6</version>
+  <description>
+    RVL Nav
+  </description>
+  <license>Apache 2.0</license>
+  <author email="shinkansan@snu.ac.kr">Gwanjun Shin</author>
+  <maintainer email="shinkansan@snu.ac.kr">Gwanjun Shin</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>amcl</exec_depend>
+  <exec_depend>map_server</exec_depend>
+  <exec_depend>move_base</exec_depend>
+</package>

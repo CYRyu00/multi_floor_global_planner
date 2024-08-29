@@ -1,0 +1,21 @@
+digraph G {
+"os_sensor" -> "os_lidar"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_scan" -> "os_sensor"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"os_sensor" -> "os_imu"[label="Broadcaster: /ouster/os_nodelet_mgr\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "TL_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_footprint" -> "base_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"map" -> "base_footprint"[label="Broadcaster: /transform_fusion\nAverage rate: 125.616 Hz\nMost recent transform: 1709636014.162 ( 0.003 sec old)\nBuffer length: 4.944 sec\n"];
+"base_scan" -> "camera_init"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "base_scan"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "main_camera_optical"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "imu_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1709636014.165 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "LF_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 31.377 Hz\nMost recent transform: 1709636014.162 ( 0.003 sec old)\nBuffer length: 4.940 sec\n"];
+"base_link" -> "LR_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 31.377 Hz\nMost recent transform: 1709636014.162 ( 0.003 sec old)\nBuffer length: 4.940 sec\n"];
+"base_link" -> "RF_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 31.377 Hz\nMost recent transform: 1709636014.162 ( 0.003 sec old)\nBuffer length: 4.940 sec\n"];
+"base_link" -> "RR_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 31.377 Hz\nMost recent transform: 1709636014.162 ( 0.003 sec old)\nBuffer length: 4.940 sec\n"];
+"camera_init" -> "body"[label="Broadcaster: /laserMapping\nAverage rate: 10.246 Hz\nMost recent transform: 1709636014.078 ( 0.087 sec old)\nBuffer length: 4.783 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1709636014.165"[ shape=plaintext ] ;
+ }->"map";
+}

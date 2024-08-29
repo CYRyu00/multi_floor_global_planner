@@ -1,0 +1,27 @@
+<launch>
+    <!-- First map server with custom topic -->
+    <node pkg="map_server" name="map_server1" type="map_server" args="$(find multi_floor_planner)/maps/303_3F.yaml">
+        <remap from="/map" to="/map1"/>
+        <param name="frame_id" value="map1" />
+    </node>
+
+    <!-- Second map server with custom topic -->
+    <node pkg="map_server" name="map_server2" type="map_server" args="$(find multi_floor_planner)/maps/303_3F.yaml">
+        <remap from="/map" to="/map2"/>
+        <param name="frame_id" value="map2" />
+    </node>
+
+    <!-- Second map server with custom topic -->
+    <node pkg="map_server" name="map_server3" type="map_server" args="$(find multi_floor_planner)/maps/303_3F.yaml">
+        <remap from="/map" to="/map3"/>
+        <param name="frame_id" value="map3" />
+    </node>
+
+    <!-- Static transform from map1 to map -->
+    <node pkg="tf" type="static_transform_publisher" name="map1_to_map" args="0 0 0 0 0 0 map map1 100"/>
+    <!-- Static transform from map2 to map -->
+    <node pkg="tf" type="static_transform_publisher" name="map2_to_map" args="0 0 1 0 0 0 map map2 100"/> 
+    <!-- Static transform from map2 to map -->
+    <node pkg="tf" type="static_transform_publisher" name="map3_to_map" args="0 0 2 0 0 0 map map3 100"/>
+    <!-- -0.3 // 0.15 -->
+</launch>

@@ -10,6 +10,8 @@ roslaunch jackal_viz view_robot.launch config:=localization
 roslaunch multi_floor_planner load_three_floor.launch
 roslaunch multi_floor_planner one2three_planner.launch
 rosrun map_server map_server /home/ryu/urop_ws/src/multi_floor_planner/maps/building2_1F.yaml
+rosrun map_server map_server /home/mobinn/urop_ws/src/multi_floor_global_planner/multi_floor_planner/maps/303_3F.yaml
+
 
 
 SLAM
@@ -36,7 +38,7 @@ rostopic pub /amcl_pose geometry_msgs/PoseWithCovarianceStamped "header:
   frame_id: 'map'
 pose:
   pose:
-    position: {x: -2.643, y: -3.907, z: 0.0}
+    position: {x: 5.395, y: -3.871, z: 0.0}
     orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
   covariance: [0.1, 0, 0, 0, 0, 0,
                0, 0.1, 0, 0, 0, 0,
@@ -44,3 +46,36 @@ pose:
                0, 0, 0, 0.1, 0, 0,
                0, 0, 0, 0, 0.1, 0,
                0, 0, 0, 0, 0, 0.1]" -r 1
+
+rostopic pub /localization nav_msgs/Odometry "{
+                header: {
+                  stamp: {secs: 0, nsecs: 0}, 
+                  frame_id: 'odom'
+                },
+                child_frame_id: 'base_link',
+                pose: {
+                  pose: {
+                    position: {x: 5.264, y: -0.168, z: 0.0},
+                    orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
+                  },
+                  covariance: [0.1, 0, 0, 0, 0, 0,
+                               0, 0.1, 0, 0, 0, 0,
+                               0, 0, 0.1, 0, 0, 0,
+                               0, 0, 0, 0.1, 0, 0,
+                               0, 0, 0, 0, 0.1, 0,
+                               0, 0, 0, 0, 0, 0.1]
+                },
+                twist: {
+                  twist: {
+                    linear: {x: 0.0, y: 0.0, z: 0.0},
+                    angular: {x: 0.0, y: 0.0, z: 0.0}
+                  },
+                  covariance: [0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0]
+                }
+              }" -r 1
+              

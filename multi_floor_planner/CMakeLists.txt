@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   tf2_ros
   costmap_2d
+  std_msgs
+  std_srvs
 )
 
 catkin_package(
@@ -25,6 +27,7 @@ add_library(a_star src/a_star.cpp)
 
 add_executable(one2two_planner src/one2two_planner.cpp)
 add_executable(one2three_planner src/one2three_planner.cpp)
+add_executable(threeOthree_planner src/threeOthree_planner.cpp)
 
 
 target_link_libraries(one2two_planner
@@ -33,6 +36,11 @@ target_link_libraries(one2two_planner
   ${catkin_LIBRARIES}
 )
 target_link_libraries(one2three_planner
+  
+  a_star
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(threeOthree_planner
   
   a_star
   ${catkin_LIBRARIES}

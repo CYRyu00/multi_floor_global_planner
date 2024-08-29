@@ -1,0 +1,35 @@
+obstacle_range: 4
+raytrace_range: 4
+# publish_voxel_map: true
+footprint: [[-0.395, -0.288], [-0.395, 0.288], [0.395, 0.288], [0.395, -0.288]]
+#robot_radius: 0.105
+
+map_type: costmap
+
+
+# # tf local costmap
+
+observation_sources: scan
+scan: {sensor_frame: os_sensor, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+   # min_obstacle_height: -20.0, max_obstacle_height: 20.0, obstacle_range: 5.0, raytrace_range: 5.0, inf_is_valid: false}
+
+# # subscribe_to_updates: true
+# plugins:
+#   - {name: inflation_layer,        type: "costmap_2d::InflationLayer"}
+#   - {name: obstacle_layer,         type: "costmap_2d::ObstacleLayer"}
+
+# # # static_layer:
+# # #   map_topic: /projected_map
+# # #   subscribe_to_updates: true
+
+
+# obstacle_layer:
+#   observation_sources: scan
+#   scan: {sensor_frame: os_sensor, data_type: LaserScan, topic: /scan, marking: true, clearing: true,
+#       min_obstacle_height: 0.0,
+#       max_obstacle_height: 10.0, obstacle_range: 10.0, raytrace_range: 12.0, inf_is_valid: false
+#       }
+
+# # inflater_layer:
+inflation_radius: 0.1
+

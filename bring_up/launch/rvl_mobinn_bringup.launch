@@ -1,0 +1,52 @@
+<launch>
+  <include file="$(find ouster_ros)/launch/rvl.launch">
+  </include>
+  <include file="$(find mobinn_4w_bringup)/launch/mobinn_4w_bringup.launch">
+  </include>
+
+  <arg name="urdf_file" default="$(find xacro)/xacro --inorder '$(find mobinn_4w_description)/urdf/mobinn_4w.urdf.xacro'" />
+  <param name="robot_description" command="$(arg urdf_file)" />
+
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="false"/>
+    <param name="rate" value="50"/>
+  </node>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="50.0" />
+    <param name="tf_prefix" value=""/>
+  </node>
+  <node name="mobinn2twist" pkg="mobinn2twist" type="convert.py">
+  </node>
+  <include file="$(find fast_lio_localization)/launch/localization_ouster64.launch">
+  </include>
+
+
+  <node name="rviz_mobinn" pkg="rviz" type="rviz" args="-d $(find mobinn_4w_description)/rviz/model.rviz" if="false" />
+
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+		<param name="resolution" value="0.05" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="map" />
+    <param name="base_frame_id" type="string" value="base_footprint"/>
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="50.0" />
+    <param name="filter_ground" type="bool" value="true"/>
+    <param name="filter_speckle" type="bool" value="true"/>
+    <!-- <param name="ground_filter/distance" value="0.9"/> -->
+    <!-- <param name="ground_filter/plane_distance" value="0.0"/> -->
+    <!-- <param name="pointcloud_min_z" value=""/> -->
+    <param name="pointcloud_max_z" value="2.0"/>
+    <param name="occupancy_min_z" type="double" value="0.3" />
+    <param name="occupancy_max_z" type="double" value="2.5" />
+
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/map_points" />
+	
+	</node>
+
+  <include file="$(find my_rvl_navigation)/launch/move_base.launch">
+  </include>
+
+</launch>
