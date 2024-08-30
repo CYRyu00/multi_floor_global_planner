@@ -1,5 +1,6 @@
 <launch>
-   
+    <include file="$(find multi_floor_planner)/launch/load_building2.launch">
+  </include>
     <node name="one2three_planner" pkg="multi_floor_planner" type="one2three_planner" output="screen"/>
 
     <!-- Launch the pose_publisher node -->

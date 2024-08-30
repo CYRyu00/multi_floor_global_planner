@@ -8,17 +8,37 @@
 
 int get_id(int x, int y, const nav_msgs::OccupancyGrid& map){
     //some bias correction (tuned)
-    return (y + map.info.width/2 - map.info.origin.position.y/2 + 2)*map.info.width + x + map.info.width/2 - map.info.origin.position.x/2 + 2;
+    return y*map.info.width + x;
 }
 // Check if a cell is free
 bool isFree(int x, int y, const nav_msgs::OccupancyGrid& map) {
     int width = map.info.width;
     int height = map.info.height;
-    
-    if (x + map.info.width/2 - map.info.origin.position.x/2 < 0 || y + map.info.height/2 - map.info.origin.position.y/2 + 2 < 0 || x + map.info.width/2 - map.info.origin.position.x/2 >= width || y + map.info.height/2 - map.info.origin.position.y/2 + 2 >= height) return false;
-    int index = get_id(x,y,map);
-    return map.data[index] == 0;
+    int radius = 3; // 0.6m by 0.6m r
+
+    // Iterate over each cell within the square bounding box of the radius
+    for (int dx = -radius; dx <= radius; dx++) {
+        for (int dy = -radius; dy <= radius; dy++) {
+            int nx = x + dx;
+            int ny = y + dy;
+
+            // Check if the neighboring cell is out of bounds
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+                return false;
+            }
+
+            int index = get_id(nx, ny, map);
+
+            // Check if the neighboring cell is not free
+            if (map.data[index] != 0) {
+                return false;
+            }
+        }
+    }
+    // If all cells in the radius are free
+    return true;
 }
+
 
 // Find the nearest free cell around a given node
 Node findNearestFreeCell(const Node& node, const nav_msgs::OccupancyGrid& map) {
@@ -56,7 +76,7 @@ std::vector<Node> getNeighbors(const Node& node, const nav_msgs::OccupancyGrid& 
             if (dx == 0 && dy == 0) continue;
             int nx = node.x + dx;
             int ny = node.y + dy;
-            if (nx + width/2 - map.info.origin.position.x/2 +2 >= 0 && ny + height/2 - map.info.origin.position.y/2 >= 0 && nx+ width/2 - map.info.origin.position.x/2 +2 < width && ny + height/2 - map.info.origin.position.y/2 < height && map.data[get_id(nx,ny,map)] == 0) {
+            if (nx >= 0 && ny >= 0 && nx < width && ny < height && isFree(nx,ny,map) ) {
                 neighbors.push_back({nx, ny, 0, 0, nullptr});
             }
         }
@@ -94,6 +114,7 @@ PathResult aStar(const nav_msgs::OccupancyGrid& map, Node start, Node goal) {
     
     if (!isFree(start.x, start.y, map)) {
         std::cout << "Start is occupied by an obstacle. Adjusting start position..." << std::endl;
+        std::cout << "width "<< map.info.width << " height " << map.info.width << std::endl;
         std::cout << start.x << ", " << start.y << " : " << start_id << " " <<  static_cast<int>(map.data[start_id]) << std::endl;
         start = findNearestFreeCell(start, map);
     }
