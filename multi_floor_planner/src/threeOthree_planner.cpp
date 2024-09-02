@@ -305,15 +305,16 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
         prev_goal_x = pose_msg.pose.position.x;
         prev_goal_y = pose_msg.pose.position.y;
 
+        std_msgs::Int32 floor_msg;
+        floor_msg.data = current_floor;
+        floor_pub.publish(floor_msg);
         // maps[current_floor].header.frame_id = "map";
         // map_pub.publish(maps[current_floor]);
         
     }
 
     map_pub.publish(maps[current_floor]);
-    std_msgs::Int32 floor_msg;
-    floor_msg.data = current_floor;
-    floor_pub.publish(floor_msg);
+    
 }
 
 int main(int argc, char** argv) {

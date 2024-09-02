@@ -1,5 +1,7 @@
 <launch>
-   
+    <include file="$(find multi_floor_planner)/launch/load_building2.launch">
+    </include>
+
     <node name="threeOthree_planner" pkg="multi_floor_planner" type="threeOthree_planner" output="screen"/>
 
     <!-- Launch the pose_publisher node -->
@@ -8,7 +10,7 @@
     
     <!-- Launch RViz with a specific configuration file -->
     
-     <!-- <node pkg="rviz" type="rviz" name="rviz" required="true"
-          args="-d $(find multi_floor_planner)/rviz/one2three_planner.rviz"/> -->
+     <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find multi_floor_planner)/rviz/one2three_planner.rviz"/>
      
 </launch>
