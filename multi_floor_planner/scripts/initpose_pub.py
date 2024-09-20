@@ -9,8 +9,8 @@ def publisher():
         pose = PoseStamped()
         pose.header.stamp = rospy.Time.now()
         pose.header.frame_id = "map"
-        pose.pose.position.x = 0.0 #-1.850 #0.0 
-        pose.pose.position.y = 0.0 #1.500# 0.0
+        pose.pose.position.x = 0 #-1.850 #0.0 
+        pose.pose.position.y = 0 #1.500# 0.0
         pose.pose.position.z = 0.0
         pose.pose.orientation.w = 1.0
         pub.publish(pose)

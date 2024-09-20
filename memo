@@ -10,7 +10,7 @@ roslaunch jackal_viz view_robot.launch config:=localization
 roslaunch multi_floor_planner load_three_floor.launch
 roslaunch multi_floor_planner one2three_planner.launch
 rosrun map_server map_server /home/ryu/urop_ws/src/multi_floor_planner/maps/building2_1F.yaml
-rosrun map_server map_server /home/mobinn/urop_ws/src/multi_floor_global_planner/multi_floor_planner/maps/303_3F.yaml
+rosrun map_server map_server /home/mobinn/urop_ws/src/multi_floor_global_planner/multi_floor_planner/maps/303_1F.yaml
 
 
 
@@ -54,8 +54,8 @@ rostopic pub /localization nav_msgs/Odometry "{
                 },
                 child_frame_id: 'base_link',
                 pose: {
-                  pose: {
-                    position: {x: 5.264, y: -0.168, z: 0.0},
+                  pose: { 
+                    position: {x: 5.5462, y: 3.8062, z: 0.0},
                     orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
                   },
                   covariance: [0.1, 0, 0, 0, 0, 0,

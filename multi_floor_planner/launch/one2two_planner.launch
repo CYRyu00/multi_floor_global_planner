@@ -8,7 +8,7 @@
     
     <!-- Launch RViz with a specific configuration file -->
     
-    <node pkg="rviz" type="rviz" name="rviz" required="true"
+    <!-- <node pkg="rviz" type="rviz" name="rviz" required="true"
           args="-d $(find global_planner)/rviz/one2two_planner.rviz"/>
-    
+     -->
 </launch>

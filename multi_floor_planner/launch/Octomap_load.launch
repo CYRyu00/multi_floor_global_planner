@@ -1,0 +1,22 @@
+<launch>
+    
+    <arg name="map" default="/home/ryu/urop_ws/src/multi_floor_planner/PCD/303_2f_pgo_noise_voxel.pcd" />
+        <!-- glbal map-->
+    <node pkg="pcl_ros" type="pcd_to_pointcloud" name="map_publisher" output="screen"
+          args="$(arg map) 5 _frame_id:=map cloud_pcd:=/map_points" />
+
+    <!-- Start the octomap_server_node -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen">
+        <!-- Parameters for the octomap server -->
+        <param name="resolution" value="0.1" />
+        <param name="frame_id" value="map" />
+        <param name="sensor_model/max_range" value="50" />
+        <param name="pointcloud_max_z" value="2.0"/>
+        <param name="occupancy_min_z" type="double" value="0.3" />
+        <param name="occupancy_max_z" type="double" value="2.0" />
+        <param name="latch" value="true" />
+
+        <!-- Remap the input point cloud topic -->
+        <remap from="/cloud_in" to="/map_points" />
+    </node>
+</launch>

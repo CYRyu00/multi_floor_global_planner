@@ -26,24 +26,36 @@ double ONE_PER_ROOT_2 = 0.7071067805519557;
 
 // [stair_index][floor][x,y,z, x,y,z,w] 
 // last one is middle point of each stair
-std::vector<std::vector<std::vector<double>>> stair_poses = {{{5.395, -3.700, 0, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2},{5.132, 3.536 ,1, 0, 0, 1, 0 },{1000,1000},{5.264, -0.168, 0.5, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2},{5.264, -0.168, 0.5, 0, 0, ONE_PER_ROOT_2, ONE_PER_ROOT_2}} ,
-                                                          {{-5.367, 3.334, 0, 0, 0, -ONE_PER_ROOT_2,ONE_PER_ROOT_2},{-5.434, -3.415 ,1, 0, 0, -ONE_PER_ROOT_2,ONE_PER_ROOT_2 },{1000,1000},{-5.4005, -0.0405, 0.5, 0, 0, -ONE_PER_ROOT_2, ONE_PER_ROOT_2},{-5.4005, -0.0405, 0.5, 0, 0, -ONE_PER_ROOT_2, ONE_PER_ROOT_2}}, 
-                                                          {{1000,1000}, {-4.319, -3.510, 1, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2},{-4.068, 3.721, 2, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2}, {-4.1935, 0.1055, 1.5, 0,0, ONE_PER_ROOT_2,ONE_PER_ROOT_2},{-5.4005, -0.0405, 0.5, 0, 0, -ONE_PER_ROOT_2, ONE_PER_ROOT_2}},
-                                                          {{1000,1000}, {3.611,  -4.010, 1, 0,0, 1,0},{-2.643, -3.804, 2, 0,0,1,0},{0.484, -3.907, 1.5, 0,0, 1,0},{-5.4005, -0.0405, 0.5, 0, 0, -ONE_PER_ROOT_2, ONE_PER_ROOT_2}}};
+std::vector<std::vector<std::vector<double>>> stair_poses = {{{-0.7611, 4.7775, 0, 0, 0, 0.616683, 0.78721099},{-4.898, 1.447401 ,1, 0, 0, 1, 0},{1000,1000}
+                                                             ,{1.1037, 12.5152, 0, 0, 0,  -0.124465021,  0.99222399607},{-0.017147362,-0.697180, 0.5, 0, 0,0.710779729537,0.70341465443}} , 
+                                                             {{1000,1000}, { -10.2837, -15.04201, 1, 0,0, -0.0230720746983, 0.99973380},{-0.1649, 0.2791, 2, 0,0, 0.23394,0.9722510},
+                                                              { -2.82033729, -15.7544593, 1, 0,0, -0.0230720746983, 0.99973380},{-4.5485, -1.4678, 1.5, 0,0, 0.23394,0.9722510}}};
 
-
+//303
+// {{{-0.1612, 3.259, 0, 0, 0, 0.4319965129, 0.901875275},{5.5462, 3.8062 ,1, 0, 0, 0.68775885, 0.7259392},{1000,1000}
+// ,{5.2816, 10.687, 0, 0, 0, -0.7378795, 0.951493429},{3.3560,-1.447, 0.5, 0, 0,-0.0131546,0.9999134}} , 
+// {{1000,1000}, { -10.801, 7.477829, 1, 0,0, -0.7378795,0.6749323},{-0.188, 3.051, 2, 0,0, 0.23394,0.9722510},
+// { -11.296, 2.9742, 1, 0,0, -0.7378795,0.6749323},{-4.5485, -1.4678, 1.5, 0,0, 0.23394,0.9722510}}};
                                                         //   {{{271, -189,0, 0,0.7071067,0.7071067},{257, 174 ,1, 0,0.7071067,0.7071067 },{1000,1000}} ,
                                                         //   {{-265, 170}, {-265, -170},{1000,1000}}, 
                                                         //   {{1000,1000}, {-203, -170},{-203, 180}},
                                                         //   {{1000,1000}, {170, -194},{-125, -194}}};
 int start_floor = 0; 
 int goal_floor  = 2;
-int n = 6; //num of nodes (start + stairs + goal)
+int n = 4; //num of nodes (start + stairs + goal)
+
+std::vector<std::vector<int>> is_available = {
+        {0, 1, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1},
+        {0, 0, 0, 0},
+    };
+std::vector<int> floor_of_nodes = {0,1,2,2};
 
 std::vector<std::vector<Node>> stairs(stair_poses.size());
 Node start, goal;
 
-std::vector<int> minPath = {-1,-1,-1,-1,-1,-1};     
+std::vector<int> minPath = {-1,-1,-1,-1};     
 
 int current_floor = start_floor ;
 bool is_in_stair = false;
@@ -59,8 +71,6 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map_msg, const int flo
         current_map = *map_msg;  // Save the latest map for path planning
         map_received = true;
         ROS_INFO("Map received from /map%d.", floor+1);
- 
-        
     }
     else {
         ROS_WARN("Floor index out of range.");
@@ -111,23 +121,12 @@ void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& start_msg, const g
     
     std::vector<std::vector<PathResult>> results(n, std::vector<PathResult>(n)); //stair index
     std::vector<std::vector<double>> graph(n, std::vector<double>(n, std::numeric_limits<double>::infinity()));
-    std::vector<std::vector<int>> is_available = {
-        {0, 1, 1, 0, 0, 0},
-        {0, 0, 0, 1, 1, 0},
-        {0, 0, 0, 1, 1 ,0},
-        {0, 0, 0, 0, 0, 1},
-        {0, 0, 0, 0, 0, 1} , 
-        {0, 0, 0, 0, 0, 0}
-    };
-    std::vector<int> floor_of_nodes = {0,1,1,2,2,2};
+    
 
     start = {static_cast<int>(start_msg->pose.position.x / maps[start_floor].info.resolution),
                 static_cast<int>(start_msg->pose.position.y / maps[start_floor].info.resolution), 0, 0, nullptr};
     goal = {static_cast<int>(goal_msg->pose.position.x / maps[goal_floor].info.resolution),
                     static_cast<int>(goal_msg->pose.position.y / maps[goal_floor].info.resolution), 0, 0, nullptr};
-
-
-    
 
     for (int i = 0; i < n ; i++){
         for(int j=0 ; j < n;j++){
@@ -138,26 +137,27 @@ void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& start_msg, const g
                 
                 if (i == 0){
                     floor = start_floor;
-                    start_node.x = start.x;
-                    start_node.y = start.y; 
+                    start_node.x = start.x - maps[start_floor].info.origin.position.x/maps[start_floor].info.resolution;
+                    start_node.y = start.y - maps[start_floor].info.origin.position.y/maps[start_floor].info.resolution; 
                 }else{
                     floor = floor_of_nodes[i];
-                    start_node.x = stairs[i-1][floor].x;
-                    start_node.y = stairs[i-1][floor].y;
+                    start_node.x = stairs[i-1][floor].x - maps[floor].info.origin.position.x/maps[floor].info.resolution;
+                    start_node.y = stairs[i-1][floor].y - maps[floor].info.origin.position.y/maps[floor].info.resolution;
                    
                 }
 
                 if (j == n-1){
-                    goal_node.x = goal.x; 
-                    goal_node.y = goal.y;                
+                    goal_node.x = goal.x - maps[goal_floor].info.origin.position.x/maps[goal_floor].info.resolution; 
+                    goal_node.y = goal.y - maps[goal_floor].info.origin.position.y/maps[goal_floor].info.resolution;                
                 }else{ 
                     
-                    goal_node.x= stairs[j-1][floor].x;
-                    goal_node.y= stairs[j-1][floor].y;
+                    goal_node.x= stairs[j-1][floor].x - maps[floor].info.origin.position.x/maps[floor].info.resolution;
+                    goal_node.y= stairs[j-1][floor].y - maps[floor].info.origin.position.y/maps[floor].info.resolution;
                     // std::cout << "j - 1 :" << j-1 << " floor : " << floor << std::endl;
                 }
 
-                // std::cout << "Planning from node " << i << " to " << j <<" at floor : " << floor << std::endl;
+                // std::cout << "Planning from node " << i << " to " << j <<" at floor  " << floor << std::endl;
+                // std::cout << "start is " << start_node.x << ", " << start_node.y << std::endl;
                 // std::cout << "goal is " << goal_node.x << ", " << goal_node.y << std::endl;
                 results[i][j] = aStar(maps[floor], start_node, goal_node); 
                 graph[i][j] = results[i][j].total_cost;
@@ -185,12 +185,25 @@ void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& start_msg, const g
         next_node_idx = node_idx;
         for (const Node& node : results[prev_node_idx][next_node_idx].path) {
             geometry_msgs::PoseStamped pose;
-            pose.pose.position.x = node.x * maps[floor].info.resolution;
-            pose.pose.position.y = node.y * maps[floor].info.resolution;
+            pose.pose.position.x = node.x * maps[floor].info.resolution + maps[floor].info.origin.position.x;
+            pose.pose.position.y = node.y * maps[floor].info.resolution + maps[floor].info.origin.position.y;
             pose.pose.position.z = floor;
             ros_path.poses.push_back(pose);
         }
-       
+        //add middle point
+        if(floor != goal_floor){
+        geometry_msgs::PoseStamped pose;
+        
+        pose.pose.position.x = stair_poses[node_idx-1][goal_floor+1][0];
+        pose.pose.position.y = stair_poses[node_idx-1][goal_floor+1][1];
+        pose.pose.position.z = floor + 0.5;
+        ros_path.poses.push_back(pose);
+        pose.pose.position.x = stair_poses[node_idx-1][goal_floor+2][0];
+        pose.pose.position.y = stair_poses[node_idx-1][goal_floor+2][1];
+        pose.pose.position.z = floor + 1;
+        ros_path.poses.push_back(pose);
+        }
+        
         prev_node_idx = next_node_idx;
         floor++;
 
@@ -306,7 +319,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
         prev_goal_y = pose_msg.pose.position.y;
 
         std_msgs::Int32 floor_msg;
-        floor_msg.data = current_floor;
+        floor_msg.data = current_floor+1;
         floor_pub.publish(floor_msg);
         // maps[current_floor].header.frame_id = "map";
         // map_pub.publish(maps[current_floor]);
@@ -340,7 +353,7 @@ int main(int argc, char** argv) {
 
     clearCostmapsClient = nh.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
 
-    double resolution = 0.02;
+    double resolution = 0.1;
     for(int i=0 ; i<stair_poses.size();i++){
     stairs[i] = { {static_cast<int>(stair_poses[i][0][0] / resolution),static_cast<int>(stair_poses[i][0][1] / resolution), 0, 0, nullptr}, 
                 {static_cast<int>(stair_poses[i][1][0] / resolution),static_cast<int>(stair_poses[i][1][1] / resolution), 0, 0, nullptr},
@@ -348,8 +361,8 @@ int main(int argc, char** argv) {
     
     }
     
-    ros::Subscriber localized_pose = nh.subscribe<nav_msgs::Odometry>("/localization", 5, poseCallback);
-
+    ros::Subscriber localized_pose = nh.subscribe<nav_msgs::Odometry>("/localized_odom", 5, poseCallback);
+    
     ros::spin();
     return 0;
 }
