@@ -54,91 +54,69 @@
 #include "icp.hpp"
 
 using namespace std;
+
+//BASIC SETTINGS.... NO change
 string root_dir = ROOT_DIR;
-
-// for saving all the pcd
-pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_wait_save(new pcl::PointCloud<pcl::PointXYZI>());
-pcl::PointCloud<pcl::PointXYZI>::Ptr all_cloud(new pcl::PointCloud<pcl::PointXYZI>());
-pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZI>);
-
-int pcd_save_interval = -1;
-bool pcd_save_en = true;
-int pcd_index = 0;
-
-// rosservice
-bool program_start = false;
-
+///MAP FRAME
+std::string map_frame = "map";
+double map_entire_voxel_size;
+//IMU-LIDAR EXTRINSIC
 vector<double> imu_lidar_matrix_vector;
+
+
+/////////////////////////////////// 저장 공간
+// for saving all the pcd
+pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZI>);
 
 // frames
 std::vector<frame_pose> frames; // 1_frame={odom,pointcloud}
+/////////////////////////////////////////////////////////////////////////////
 
-ros::Subscriber points_sub;
-
-// for initial estimation
-ros::Publisher pubinitodom;
-ros::Publisher pubinit_cloud;
-ros::Publisher pubchange;
-ros::Publisher pubmap;
-ros::Publisher pubcrop_cloud;
-
-ros::Subscriber robot_signal_current_floor;
-ros::Subscriber robot_signal_estimate_pose;
-// lio result
-ros::Publisher pubodom;
-ros::Publisher pubpath;
-
-std::string map_frame = "map";
-
-int recent_index = 0;
-std::mutex update_pose_mutex;
-std::mutex update_icp_trans;
-
-std::mutex floor_update;
-
-// for initial thread
-double min_score = 100.0;
-int cnt = 1;
-bool initialized = false;
-Eigen::Matrix4d icp_transformation_result = Eigen::Matrix4d::Identity();
-Eigen::Matrix4d center_trans = Eigen::Matrix4d::Identity();
-
-// scan voxel_size
-double scan_voxel_size;
-double map_voxel_size;
-double map_entire_voxel_size;
-double NDT_voxel_size;
-
-//map management
-float map_x_size;
-float map_y_size;
-float map_z_size;
-
-Eigen::Vector4f min_pt, max_pt;
-std::vector<Eigen::Matrix4d> map_div_points;
-
-//localization failed
-int failed_count =0;
-bool failed_bool = false;
-
-bool changed_floor_input = false;
-
-int result_cnt = 1; 
-
+///FLOOR 관리/////////////
 //floor
 int current_floor=1;
 std::string floor_1;
 std::string floor_2;
 std::string floor_3;
 
-std::atomic<bool> stop_flag(false);
-std::thread pub_initial;
-std::thread pub_path;
-std::thread input;
 
-//UROP path planning
-bool UROP_change_posecbk_input = false;
-bool UROP_floor_change = false;
+/////////ROS PUBLISHER SUBSCRIBER/////////////////////////
+ros::Subscriber robot_signal_current_floor;
+ros::Subscriber robot_signal_estimate_pose;
+
+// for initial estimation
+ros::Publisher pubinitodom;
+ros::Publisher scan_cloud;
+ros::Publisher scan_result;
+ros::Publisher pubmap; //303동 Map publish
+ros::Publisher map_crop;
+// lio result -> convert into localization coord.
+ros::Publisher pubodom;
+ros::Publisher pubpath;
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+///LOCAZLIATION TOOL
+bool initialized_bool = false;
+bool floor_changed_bool = false;
+
+int icp_failed_count =0;
+int icp_succ_cout = 0;
+Eigen::Matrix4d icp_transformation_result = Eigen::Matrix4d::Identity();
+Eigen::Matrix4d floor_changed_odom = Eigen::Matrix4d::Identity();
+bool floor_saftey=false;;
+
+
+////MUTEX CONTROL//////
+std::mutex frame_mutex;
+std::mutex localization_pose_mutex;
+std::mutex map_mutex;
+
+//Thread
+std::thread pub_path;
+std::thread pub_initial;
+
+
 
 void publish_path(const ros::Publisher &pubodom, const ros::Publisher &pubpath)
 {
@@ -162,22 +140,23 @@ void publish_path(const ros::Publisher &pubodom, const ros::Publisher &pubpath)
 
 
     // updating
-
-    update_pose_mutex.lock();
-    update_icp_trans.lock();
+    frame_mutex.lock();
+    localization_pose_mutex.lock();
     for (int i = 0; i < frames.size(); i++)
     {
         frames.at(i).changed_odoemtry = icp_transformation_result * frames.at(i).transformation_matrix;
     }
-    update_icp_trans.unlock();
-    update_pose_mutex.unlock();
+    localization_pose_mutex.unlock();
+    frame_mutex.unlock();
 
     nav_msgs::Odometry corrected_odom;
+    nav_msgs::Odometry initial_pose;
     nav_msgs::Path corrected_path;
 
     corrected_path.header.frame_id = map_frame;
-    update_pose_mutex.lock();
-    for (int i = 0; i < recent_index; i++)
+
+    frame_mutex.lock();
+    for (int i = 0; i < frames.size(); i++)
     {
         frame_pose &p = frames[i];
 
@@ -200,7 +179,23 @@ void publish_path(const ros::Publisher &pubodom, const ros::Publisher &pubpath)
         // publish
         corrected_path.poses.push_back(pose_stamped);
 
-        if (i == recent_index - 1)
+        if(i==0)
+        {
+            initial_pose.header.stamp = ros::Time::now();
+            initial_pose.header.frame_id = map_frame;
+            initial_pose.child_frame_id = "base_link";
+
+            initial_pose.pose.pose.position.x = p.changed_odoemtry(0, 3);
+            initial_pose.pose.pose.position.y = p.changed_odoemtry(1, 3);
+            initial_pose.pose.pose.position.z = p.changed_odoemtry(2, 3);
+
+            initial_pose.pose.pose.orientation.x = quaternion.x();
+            initial_pose.pose.pose.orientation.y = quaternion.y();
+            initial_pose.pose.pose.orientation.z = quaternion.z();
+            initial_pose.pose.pose.orientation.w = quaternion.w();           
+        }
+
+        if (i == frames.size() - 1)
         {
             corrected_odom.header.frame_id = map_frame;
             corrected_odom.header.stamp = ros::Time::now();
@@ -215,8 +210,9 @@ void publish_path(const ros::Publisher &pubodom, const ros::Publisher &pubpath)
             corrected_odom.pose.pose.orientation.w = quaternion.w();
         }
     }
-
-    update_pose_mutex.unlock();
+    frame_mutex.unlock();
+    
+    pubinitodom.publish(initial_pose);
     pubodom.publish(corrected_odom);
     pubpath.publish(corrected_path);
 }
@@ -224,79 +220,102 @@ void publish_path(const ros::Publisher &pubodom, const ros::Publisher &pubpath)
 void path_thread()
 {
     ros::Rate rate(10);
-    while (ros::ok()&& !stop_flag)
+    while (ros::ok())
     {
         rate.sleep();
         publish_path(pubodom, pubpath);
     }
 }
-
+int cnt;
 void inital_thread()
 {
-    ros::Rate rate(10.0);
-    while (ros::ok()&& !stop_flag)
+    ros::Rate rate(3.0);
+
+    while (ros::ok())
     {
         rate.sleep();
 
-        if (frames.size() > 50)
+        if (frames.size() > 30)
         {
-            std::cout << "Start! Current Floor is  "<< current_floor << std::endl;
-            bool success = false;
-            Eigen::Matrix4d icp_transformation = Eigen::Matrix4d::Identity();
+            
+            localization_pose_mutex.lock();
+            if(floor_saftey){
+                icp_transformation_result = floor_changed_odom;
+                floor_saftey = false;
+            }
+            Eigen::Matrix4d pose_temp = icp_transformation_result;
+            localization_pose_mutex.unlock();
+            bool success;
 
-
-            double score = UROP_localization(success, icp_transformation, cnt);
-        
-            /*if (success)
+            if(!initialized_bool)
             {
-                update_icp_trans.lock();
-                icp_transformation_result = icp_transformation;
-                update_icp_trans.unlock();
-            }*/
-           cnt++;
+                std::cout << "Start! Current Floor is  "<< current_floor << std::endl;
+                success = UROP_localization(pose_temp, cnt);
+                
+                localization_pose_mutex.lock();
+                if(success)
+                {
+                    icp_transformation_result = pose_temp;
+                    icp_failed_count =0;
+                    icp_succ_cout++;
+                    if(icp_succ_cout >10)
+                    {
+                        initialized_bool = true;
+                        icp_succ_cout =0;
+                        floor_changed_bool = false;
+                        std::cout<<"Initialized Completed!"<<std::endl;
+                    }
+     
+                }
+                else
+                {
+                    icp_failed_count++;
+                    icp_succ_cout=0;
+                    if(icp_failed_count >5)
+                    {
+                        initialized_bool= false;
+                        icp_failed_count = 0;
+                    }
+                }
+                localization_pose_mutex.unlock();
+                std::cout<<" "<<std::endl;
 
-            std:cout<<" "<<std::endl;
-        }
-    }
-}
+            }else
+            {
+                if(cnt%50==0){
+                    std::cout << "Start! Current Floor is  "<< current_floor << std::endl;
+                    success = UROP_localization(pose_temp, cnt);
 
-void input_thread()
-{
-    ros::Rate rate(0.1);
-    while (ros::ok()&& !stop_flag)
-    {
-        rate.sleep();
+                    localization_pose_mutex.lock();
+                    if(success)
+                    {
+                        icp_transformation_result = pose_temp;
+                        icp_failed_count =0;
+                        icp_succ_cout++;
 
-        std::string input;
-        std::cout << "Enter x, y, z (or press enter to skip, 'R' to reset): ";
-        std::getline(std::cin, input);
+                        if(icp_failed_count >10)
+                        {
+                            initialized_bool= false;
+                            icp_failed_count = 0;
+                        }
+                    }
+                    else
+                    {
+                        icp_failed_count++;
+                        icp_succ_cout=0;
+                        if(icp_succ_cout >10)
+                        {
+                            initialized_bool = true;
+                            icp_succ_cout =0;
+                        }
+                    }
+                    localization_pose_mutex.unlock();
+                    std::cout<<" "<<std::endl;
 
-        if (input == "R")
-        {
-            update_icp_trans.lock();
-            initialized = false;
-            update_icp_trans.unlock();
-            std::cout << "Initialization reset (initialized = false)" << std::endl;
-        }else if(input == "F"){
+                }
+            }
 
-            failed_bool = true;
-            std::cout<<"Failed Rotation starts"<<std::endl;
-
-        }else if (!input.empty())
-        {
-            float x, y, z;
-            std::stringstream ss(input);
-            ss >> x >> y >> z;
-            std::cout << "Received x: " << x << ", y: " << y << ", z: " << z << std::endl;
-
-            update_icp_trans.lock();
-            initialized = true;
-            failed_bool = false;
-            changed_floor_input = true;
-            icp_transformation_result(0, 3) = x;
-            icp_transformation_result(1, 3) = y;
-            icp_transformation_result(2, 3) = z;
-            update_icp_trans.unlock();
+            cnt++;
         }
     }
 }
@@ -306,29 +325,55 @@ void floor_cbk(const boost::shared_ptr<const std_msgs::Int32>& msg)
 {
     if(current_floor != msg->data)
     {
-        /*stop_flag = true;
-        if (pub_initial.joinable()) pub_initial.join();
-        stop_flag = false;*/
+        //FRAME RESET -> FLOOR is changed...!
+        frame_mutex.lock();
+        std::vector<frame_pose> temp;
+        
+        int start_index = std::max(0, static_cast<int>(frames.size()) - 10);
+        for(int i = start_index; i < frames.size(); i++)
+        {
+            temp.push_back(frames.at(i));
+        }
 
-        floor_update.lock();
         frames.clear();
         frames.shrink_to_fit();
-        recent_index =0;
         std::cout<<"frame is reset, size is: "<<frames.size()<<std::endl;
-        //map_cloud.reset();        
-        floor_update.unlock();
+
+        if(temp.size()>0){
+
+            for(int i=0;i<temp.size();i++){
+                
+                if(i>=temp.size()) continue;
+
+                frames.push_back(temp.at(i));
+            }
+        }
+
+
+        Eigen::Matrix4d new_init =Eigen::Matrix4d::Identity();
+        if(frames.size()>0)
+            new_init = frames.at(frames.size()-1).transformation_matrix;
+
+        frame_mutex.unlock();
+
+
+        /// Localization RESET..!!!
+        localization_pose_mutex.lock();
+        initialized_bool = false;
+        //new_init= icp_transformation_result* new_init;
+        if(frames.size()>0){
+            icp_transformation_result = new_init.inverse();
+            floor_changed_odom = new_init.inverse();
+            floor_saftey=true;
+        } //Eigen::Matrix4d::Identity();
+        floor_changed_bool = true;
+        icp_failed_count = 0;
+        localization_pose_mutex.unlock();
 
 
 
-        update_icp_trans.lock();
-        initialized = false;
-        icp_transformation_result = Eigen::Matrix4d::Identity();
-        UROP_floor_change = true;
-        failed_count = 0;
-        update_icp_trans.unlock();
 
-
-
+/////////////////////////// Floor subscribe ////////////////////////////////////////////////
         current_floor = msg->data;
         std::cout << "Floor is "<<current_floor<<std::endl;
         std::string pcd_file;
@@ -336,72 +381,24 @@ void floor_cbk(const boost::shared_ptr<const std_msgs::Int32>& msg)
         if(current_floor == 1) pcd_file = floor_1;
         else if(current_floor == 2) pcd_file = floor_2;
         else pcd_file = floor_3;
-
+        map_mutex.lock();
         if (pcl::io::loadPCDFile<pcl::PointXYZI>(pcd_file, *map_cloud) == -1)
         {
             ROS_ERROR("Couldn't read file %s", pcd_file.c_str());
             return;
         }
+        map_mutex.unlock();
 
         pcl::PointCloud<pcl::PointXYZI>::Ptr map_vis(new pcl::PointCloud<pcl::PointXYZI>());
         *map_vis = *map_cloud;
-        voxelize_entire_map(map_vis);
+        voxelize_pcd(map_vis,map_entire_voxel_size);
         
-
-        // Calculate min/max for x, y, z
-        //Eigen::Vector4f min_pt, max_pt;
-        pcl::getMinMax3D(*map_vis, min_pt, max_pt);
-
-        std::cout << "Min X: " << min_pt[0] << ", Max X: " << max_pt[0] << std::endl;
-        std::cout << "Min Y: " << min_pt[1] << ", Max Y: " << max_pt[1] << std::endl;
-        std::cout << "Min Z: " << min_pt[2] << ", Max Z: " << max_pt[2] << std::endl;
-
-        // Calculate the center of the entire map
-        double center_x = (min_pt[0] + max_pt[0]) / 2.0;
-        double center_y = (min_pt[1] + max_pt[1]) / 2.0;
-        double center_z = (min_pt[2] + max_pt[2]) / 2.0;
-
-        //std::cout << "Map Center: (" << center_x << ", " << center_y << "," << center_z << ")" << std::endl;
-
-        center_trans = make_eigen_matrix(center_x, center_y, 0);
-        map_div_points.push_back(Eigen::Matrix4d::Identity());
-        map_div_points.push_back(center_trans);
-
-        /*update_icp_trans.lock();
-        icp_transformation_result = center_trans;
-        update_icp_trans.unlock();*/
-
-        //map size
-        map_x_size = max_pt[0]-min_pt[0];
-        map_y_size = max_pt[1]-min_pt[1];
-        map_z_size = max_pt[2]-min_pt[2];
-    
-
-        //divide map size
-        map_div_points.push_back(make_eigen_matrix(center_x+(map_x_size/4), center_y+(map_y_size/4),0));
-        map_div_points.push_back(make_eigen_matrix(center_x-(map_x_size/4), center_y+(map_y_size/4),0));
-        map_div_points.push_back(make_eigen_matrix(center_x-(map_x_size/4), center_y-(map_y_size/4),0));
-        map_div_points.push_back(make_eigen_matrix(center_x+(map_x_size/4), center_y-(map_y_size/4),0));
-
-
         sensor_msgs::PointCloud2 map_msg;
         pcl::toROSMsg(*map_vis, map_msg);
         map_msg.header.frame_id = map_frame;
         pubmap.publish(map_msg);
-
-
-        /*pub_initial =std::thread(inital_thread);
-        pub_path = std::thread{path_thread};
-        input = std::thread(input_thread);*/
-    // for vis
-        pcl::PointCloud<pcl::PointXYZI>::Ptr changed_Cloud(new pcl::PointCloud<pcl::PointXYZI>(1,1));
-        sensor_msgs::PointCloud2 chan_msgs;
-        pcl::toROSMsg(*changed_Cloud, chan_msgs);
-        chan_msgs.header.frame_id = map_frame;
-        return;
-
+///////////////////////////////////////////////////////////////////////////////////////////////        
     }
-
     return;
 }
 
@@ -410,21 +407,15 @@ void robot_pose_cbk(const boost::shared_ptr<const geometry_msgs::PoseStamped>& m
     geometry_msgs::Pose current_pose;
     current_pose = msg->pose;
 
-    update_icp_trans.lock();
-    initialized = true;
-    failed_bool = false;
-    failed_count = 0;
-    changed_floor_input = true;
-    UROP_change_posecbk_input = true;
+    localization_pose_mutex.lock();
+    initialized_bool = true;
+    icp_failed_count = 0;
     icp_transformation_result(0, 3) = current_pose.position.x;
     icp_transformation_result(1, 3) = current_pose.position.y;
     icp_transformation_result(2, 3) = current_pose.position.z;
-    update_icp_trans.unlock();
-
-
+    localization_pose_mutex.unlock();
 
     std::cout<<"recieved rostopic pose: "<<current_pose.position.x<<" "<<current_pose.position.y<<" "<<current_pose.position.z<<std::endl;   
-
 }
 
 void synchronizedCallback(const sensor_msgs::PointCloud2ConstPtr &pointcloud, const nav_msgs::Odometry::ConstPtr &odom)
@@ -455,18 +446,20 @@ void synchronizedCallback(const sensor_msgs::PointCloud2ConstPtr &pointcloud, co
         pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZI>());
         pcl::fromROSMsg(*pointcloud, *pcl_cloud);
 
+        ////NOISE REMOVE.....
         pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZI>());
         pcl::StatisticalOutlierRemoval<pcl::PointXYZI> sor;
         sor.setInputCloud(pcl_cloud);
         sor.setMeanK(150); // 각 포인트의 주변에서 k가의 이웃 포인트를 고려... k값을 늘리면 더 종교
         sor.setStddevMulThresh(1.0); // 표준편차만큼 떨어져있는 것을 노이즈로 고려... 값이 작을 수록 크게 벗어난 포인트를 더 많이 제거.. 너무 낮추면 유용한 데이터도 소실
         sor.filter(*filtered_cloud); //noise remove code
+        //////////////////////////////////////////////////////////////////
 
         frame_pose current_frame(transformation_matrix, filtered_cloud);
-        floor_update.lock();
+
+        frame_mutex.lock();
         frames.push_back(current_frame);
-        floor_update.unlock();
-        recent_index++;
+        frame_mutex.unlock();
 
         // ROS_DEBUG("Image timestamp: %f", image->header.stamp.toSec());
         ROS_DEBUG("PointCloud timestamp: %f", pointcloud->header.stamp.toSec());
@@ -477,6 +470,7 @@ void synchronizedCallback(const sensor_msgs::PointCloud2ConstPtr &pointcloud, co
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
+
 }
 
 int main(int argc, char **argv)
@@ -490,16 +484,15 @@ int main(int argc, char **argv)
     nh.param<std::string>("floor_2", floor_2, "/home/hyss/localization/snu_local/src/snu_localization/map/noise_removed/303_stairs_1f_pgo_noise.pcd");
     nh.param<std::string>("floor_3", floor_3, "/home/hyss/localization/snu_local/src/snu_localization/map/noise_removed/303_stairs_2f_pgo_noise.pcd");
     
-    nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en, true);
-    
-    nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
     // imu_lidar_extrinsic
     nh.param<vector<double>>("I_L_extrinsic", imu_lidar_matrix_vector, vector<double>());
+    
     // voxel size
     nh.param<double>("scan_voxel_size", scan_voxel_size, 0.2);
     nh.param<double>("map_voxel_size", map_voxel_size, 0.2);
     nh.param<double>("map_entire_voxel_size",map_entire_voxel_size,0.4);
     nh.param<double>("NDT_voxel_size", NDT_voxel_size, 0.5);
+    
     // IL_extrinsic matrix to eigen matrix!
     if (imu_lidar_matrix_vector.size() == 16)
     {
@@ -525,67 +518,32 @@ int main(int argc, char **argv)
     }
     pcl::PointCloud<pcl::PointXYZI>::Ptr map_vis(new pcl::PointCloud<pcl::PointXYZI>());
     *map_vis = *map_cloud;
-    voxelize_entire_map(map_vis);
-    
+    voxelize_pcd(map_vis, map_entire_voxel_size);
 
-    // Calculate min/max for x, y, z
-    //Eigen::Vector4f min_pt, max_pt;
-    pcl::getMinMax3D(*map_vis, min_pt, max_pt);
-
-    std::cout << "Min X: " << min_pt[0] << ", Max X: " << max_pt[0] << std::endl;
-    std::cout << "Min Y: " << min_pt[1] << ", Max Y: " << max_pt[1] << std::endl;
-    std::cout << "Min Z: " << min_pt[2] << ", Max Z: " << max_pt[2] << std::endl;
-
-    // Calculate the center of the entire map
-    double center_x = (min_pt[0] + max_pt[0]) / 2.0;
-    double center_y = (min_pt[1] + max_pt[1]) / 2.0;
-    double center_z = (min_pt[2] + max_pt[2]) / 2.0;
-
-    //std::cout << "Map Center: (" << center_x << ", " << center_y << "," << center_z << ")" << std::endl;
-
-    center_trans = make_eigen_matrix(center_x, center_y, 0);
-    map_div_points.push_back(Eigen::Matrix4d::Identity());
-    map_div_points.push_back(center_trans);
-
-    /*update_icp_trans.lock();
-    icp_transformation_result = center_trans;
-    update_icp_trans.unlock();*/
-
-    //map size
-    map_x_size = max_pt[0]-min_pt[0];
-    map_y_size = max_pt[1]-min_pt[1];
-    map_z_size = max_pt[2]-min_pt[2];
- 
-
-    //divide map size
-    map_div_points.push_back(make_eigen_matrix(center_x+(map_x_size/4), center_y+(map_y_size/4),0));
-    map_div_points.push_back(make_eigen_matrix(center_x-(map_x_size/4), center_y+(map_y_size/4),0));
-    map_div_points.push_back(make_eigen_matrix(center_x-(map_x_size/4), center_y-(map_y_size/4),0));
-    map_div_points.push_back(make_eigen_matrix(center_x+(map_x_size/4), center_y-(map_y_size/4),0));
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // publishers
     pubinitodom = nh.advertise<nav_msgs::Odometry>("Initial_odometry", 100000);
-    pubmap = nh.advertise<sensor_msgs::PointCloud2>("localization_map", 100000, true);
-    pubinit_cloud = nh.advertise<sensor_msgs::PointCloud2>("Initial_points", 100000);
-    pubcrop_cloud = nh.advertise<sensor_msgs::PointCloud2>("crop_cloud", 100000);
-    pubchange = nh.advertise<sensor_msgs::PointCloud2>("icp_changed_results", 100000);
+    pubmap = nh.advertise<sensor_msgs::PointCloud2>("MAP", 100000, true); //303동 MAP
+    scan_cloud = nh.advertise<sensor_msgs::PointCloud2>("Scan_points", 100000);
+    scan_result = nh.advertise<sensor_msgs::PointCloud2>("Scan_icp_results", 100000);
+    map_crop = nh.advertise<sensor_msgs::PointCloud2>("crop_maps", 100000);
 
+    //FAST-LIO RESULT convert into localization coordinate(Localization results)
     pubodom = nh.advertise<nav_msgs::Odometry>("localized_odom", 100000);
     pubpath = nh.advertise<nav_msgs::Path>("localized_path", 100000);
 
+    //MAP Publish
     sensor_msgs::PointCloud2 map_msg;
     pcl::toROSMsg(*map_vis, map_msg);
     map_msg.header.frame_id = map_frame;
     pubmap.publish(map_msg);
 
-    // subscribers
-
-
+      
+    // UROP topics... subscribes
     robot_signal_current_floor = nh.subscribe<std_msgs::Int32>("multi_floor_planner/current_floor",1,floor_cbk);
     robot_signal_estimate_pose = nh.subscribe<geometry_msgs::PoseStamped>("multi_floor_planner/estimate_pose",1,robot_pose_cbk);
 
+    //FAST-LIO RESULTS....
     message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_sub(nh, "/cloud_registered", 1);
     message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/Odometry", 1);
     // sync callbacks....
@@ -596,24 +554,8 @@ int main(int argc, char **argv)
     // ROS 루프
     pub_initial =std::thread(inital_thread);
     pub_path = std::thread{path_thread};
-    input = std::thread(input_thread);
-    
-
 
     ros::spin();
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // pcd save!
-    /*if (map_vis->size() > 0 && pcd_save_en)
-    {
-        string file_name = string("scans.pcd");
-        string all_points_dir(string(string(ROOT_DIR) + "PCD/") + file_name);
-        pcl::PCDWriter pcd_writer;
-        ROS_INFO("Current scan is saved to /PCD/%s\n", file_name.c_str());
-        cout << "current scan is saved to /PCD/" << file_name << endl;
-        pcd_writer.writeBinary(all_points_dir, *map_vis);
-    }*/
-
+    
     return 0;
 }

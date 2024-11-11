@@ -1,6 +1,5 @@
 <launch>
-  <include file="$(find ouster_ros)/launch/rvl.launch">
-  </include>
+  <include file="$(find ouster_ros)/launch/rvl.launch"> </include>
   <include file="$(find mobinn_4w_bringup)/launch/mobinn_4w_bringup.launch">
   </include>
 
@@ -15,15 +14,17 @@
     <param name="publish_frequency" type="double" value="50.0" />
     <param name="tf_prefix" value=""/>
   </node>
-  <node name="mobinn2twist" pkg="mobinn2twist" type="convert.py">
+  <node name="mobinn2twist" pkg="mobinn2twist" type="convert_newfirm.py">
   </node>
   <include file="$(find fast_lio)/launch/mapping_ouster64.launch">
   </include> 
   <include file="$(find snu_localization)/launch/localization.launch">
   </include>
 
-  <node pkg="tf" type="static_transform_publisher" name="kinect_base_link5" args="0 0 0 1.57 0 0 odom base_footprint 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="kinect_base_link5" args="0 0 0 1.57 0 0 odom base_footprint 10"/>
 
+  <node name="transform_fusion" pkg="fast_lio_localization" type="transform_fusion.py">
+  </node>
   <node name="rviz_mobinn" pkg="rviz" type="rviz" args="-d $(find mobinn_4w_description)/rviz/model.rviz" if="false" />
 
   <include file="$(find my_rvl_navigation)/launch/move_base.launch">

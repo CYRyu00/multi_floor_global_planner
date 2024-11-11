@@ -6,13 +6,13 @@
     </node>
 
     <!-- Second map server with custom topic -->
-    <node pkg="map_server" name="map_server2" type="map_server" args="$(find multi_floor_planner)/maps/303_2F_ver2.yaml">
+    <node pkg="map_server" name="map_server2" type="map_server" args="$(find multi_floor_planner)/maps/303_2F_final.yaml">
         <remap from="/map" to="/map2"/>
         <param name="frame_id" value="map2" />
     </node>
 
     <!-- Second map server with custom topic -->
-    <node pkg="map_server" name="map_server3" type="map_server" args="$(find multi_floor_planner)/maps/303_3F.yaml">
+    <node pkg="map_server" name="map_server3" type="map_server" args="$(find multi_floor_planner)/maps/303_3F_final.yaml">
         <remap from="/map" to="/map3"/>
         <param name="frame_id" value="map3" />
     </node>

@@ -1,6 +1,6 @@
-floor_1: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization/map/ver2_303_map/303_1f_ver2.pcd"
-floor_2: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization//map/ver2_303_map/303_2f_ver2.pcd"
-floor_3: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization//map/ver2_303_map/303_3f_ver2.pcd"
+floor_1: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization/map/UROP_MAP/303_1f_final.pcd"
+floor_2: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization/map/UROP_MAP/303_2f_final.pcd"
+floor_3: "/home/mobinn/urop_ws/src/multi_floor_global_planner/snu_localization/map/UROP_MAP/303_3f_final.pcd"
 
 I_L_extrinsic: [1.0, 0.0, 0.0, -0.011,
                 0.0, 1.0, 0.0, -0.02329,
@@ -9,8 +9,8 @@ I_L_extrinsic: [1.0, 0.0, 0.0, -0.011,
 
 
 NDT_voxel_size: 0.8
-scan_voxel_size: 0.3
-map_voxel_size: 0.3
+scan_voxel_size: 0.2
+map_voxel_size: 0.2
 map_entire_voxel_size: 0.2
 
 pcd_save:

@@ -10,6 +10,7 @@
 #include "multi_floor_planner/a_star.h"
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
+#include "threeOthree_planner.h"
  
 
 std::vector<nav_msgs::OccupancyGrid> maps(3);
@@ -26,11 +27,11 @@ double ONE_PER_ROOT_2 = 0.7071067805519557;
 
 // [stair_index][floor][x,y,z, x,y,z,w] 
 // last one is middle point of each stair
-std::vector<std::vector<std::vector<double>>> stair_poses = {{{-0.7611, 4.7775, 0, 0, 0, 0.616683, 0.78721099},{-4.898, 1.447401 ,1, 0, 0, 1, 0},{1000,1000}
-                                                             ,{1.1037, 12.5152, 0, 0, 0,  -0.124465021,  0.99222399607},{-0.017147362,-0.697180, 0.5, 0, 0,0.710779729537,0.70341465443}} , 
-                                                             {{1000,1000}, { -10.2837, -15.04201, 1, 0,0, -0.0230720746983, 0.99973380},{-0.1649, 0.2791, 2, 0,0, 0.23394,0.9722510},
-                                                              { -2.82033729, -15.7544593, 1, 0,0, -0.0230720746983, 0.99973380},{-4.5485, -1.4678, 1.5, 0,0, 0.23394,0.9722510}}};
-
+// entrance pose(1F) / exit pose (2F)/ (3F)/ middle at Lower Floor / middle at Upper Floor 
+std::vector<std::vector<std::vector<double>>> stair_poses = {{{-0.7611, 4.7775, 0, 0, 0, 0.616683, 0.78721099},{1.69160, 4.9953 ,1, 0, 0, 0.6978661801087425, 0.7162281722052214},{1000,1000}
+                                                             ,{1.1037, 12.5152, 0, 0, 0,  -0.124465021,  0.99222399607},{-0.0,-0.0, 0.5, 0, -ONE_PER_ROOT_2 ,ONE_PER_ROOT_2 }} , 
+                                                             {{1000,1000}, { -14.66193, 9.2180, 1, 0,0, -0.7137456068752004, 0.7004050318682411},{1.1320, 5.661, 2, 0,0, 0.44910577742387947,0.893478595537964},
+                                                              { -15.01683, 2.65834, 1, 0,0, -0.7057227762112944, 0.708488082564995},{-0.0,-0.0, 1.5, 0, ONE_PER_ROOT_2 ,ONE_PER_ROOT_2 }}};
 //303
 // {{{-0.1612, 3.259, 0, 0, 0, 0.4319965129, 0.901875275},{5.5462, 3.8062 ,1, 0, 0, 0.68775885, 0.7259392},{1000,1000}
 // ,{5.2816, 10.687, 0, 0, 0, -0.7378795, 0.951493429},{3.3560,-1.447, 0.5, 0, 0,-0.0131546,0.9999134}} , 
@@ -233,7 +234,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
     if(minPath[1]!=-1){
         if(stair_idx == -1) stair_idx = minPath[1]-1;
         
-        double threshold = 0.3;
+        double threshold = 0.5;
         bool is_reached = ((prev_goal_x -x)*(prev_goal_x -x) + (prev_goal_y -y)*(prev_goal_y -y)) < (threshold*threshold);
         // int pub_floor = current_floor;
 
@@ -266,7 +267,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
                 pose_msg.pose.orientation.y =  stair_poses[stair_idx][goal_floor + 2][4];
                 pose_msg.pose.orientation.z =  stair_poses[stair_idx][goal_floor + 2][5];
                 pose_msg.pose.orientation.w =  stair_poses[stair_idx][goal_floor + 2][6]; 
-                estimate_pose_pub.publish(pose_msg);
+                //estimate_pose_pub.publish(pose_msg);
 
                 //Clear cost map
                 std_srvs::Empty srv;
@@ -321,6 +322,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
         std_msgs::Int32 floor_msg;
         floor_msg.data = current_floor+1;
         floor_pub.publish(floor_msg);
+        ros::Duration(0.1).sleep();
         // maps[current_floor].header.frame_id = "map";
         // map_pub.publish(maps[current_floor]);
         

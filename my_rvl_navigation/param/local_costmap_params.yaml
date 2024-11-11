@@ -2,14 +2,19 @@ local_costmap:
   global_frame: base_footprint
   robot_base_frame: base_footprint
 
-  update_frequency: 10.0
-  publish_frequency: 10.0
-  transform_tolerance: 0.5
+  update_frequency: 20.0
+  publish_frequency: 20.0
+  observation_persistence: 0.0  # Time (seconds) to keep sensor observations after they are seen
 
+  transform_tolerance: 0.2  # Small buffer to handle tf latency (seconds)
+
+  # Clearing old obstacles faster:
+  obstacle_keep_time: 0.0  # (seconds) Time to keep an obstacle before removing it
   static_map: false  
   rolling_window: true
-  width: 4
-  height: 4
+  width: 8
+  height: 8
   resolution: 0.02
+  inflation_radius: 0.0
     
   

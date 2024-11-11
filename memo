@@ -1,5 +1,6 @@
 roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/urop_ws/src/multi_floor_planner/maps/1F_3F_building.yaml
 rosrun map_server map_server /home/ryu/urop_ws/src/multi_floor_planner/maps/1F_3F_building.yaml
+~/rvl_ws/src/FAST_LIO_LOCALIZATION/scripts$ python3 transform_fusion.py 
 
 
 MAP
